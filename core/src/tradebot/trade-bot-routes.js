@@ -15,6 +15,9 @@ const sendDoge = api.sendDoge
 const sendDgb = api.sendDgb
 const sendRvn = api.sendRvn
 const sendArrr = api.sendArrr
+const sendNmc = api.sendNmc
+const sendDash = api.sendDash
+const sendFiro = api.sendFiro
 
 export const routes = {
 	apiCall: async (req) => {
@@ -232,6 +235,42 @@ export const routes = {
 		let response
 		try {
 			response = await sendArrr(req.data)
+		} catch (e) {
+			console.error(e)
+			console.error(e.message)
+			response = e.message
+		}
+		return response
+	},
+
+	sendNmc: async (req) => {
+		let response
+		try {
+			response = await sendNmc(req.data)
+		} catch (e) {
+			console.error(e)
+			console.error(e.message)
+			response = e.message
+		}
+		return response
+	},
+
+	sendDash: async (req) => {
+		let response
+		try {
+			response = await sendDash(req.data)
+		} catch (e) {
+			console.error(e)
+			console.error(e.message)
+			response = e.message
+		}
+		return response
+	},
+
+	sendFiro: async (req) => {
+		let response
+		try {
+			response = await sendFiro(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
