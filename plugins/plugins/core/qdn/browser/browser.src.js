@@ -1159,7 +1159,7 @@ class WebBrowser extends LitElement {
 						tabId = frame.dataset.id
 					}
 
-					if (data.name === 'Q-Mail') {
+					if ((data.name === 'QM-Mail') || (data.name === 'Q-Mail')) {
 						localStorage.setItem("Q-Mail-last-visited", Date.now())
 
 					}
