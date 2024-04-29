@@ -1,7 +1,7 @@
-import { css, html, LitElement } from 'lit'
-import { Epml } from '../../../../epml'
+import {css, html, LitElement} from 'lit'
+import {Epml} from '../../../../epml'
 import isElectron from 'is-electron'
-import { get, registerTranslateConfig, translate, use } from '../../../../../core/translate/index.js'
+import {get, registerTranslateConfig, translate, use} from '../../../../../core/translate'
 import ShortUniqueId from 'short-unique-id';
 import FileSaver from 'file-saver'
 import * as actions from '../../components/qdn-action-types'
@@ -10,10 +10,10 @@ import '@material/mwc-icon'
 import '@material/mwc-checkbox'
 import WebWorker from 'web-worker:./computePowWorkerFile.src.js'
 import WebWorkerChat from 'web-worker:./computePowWorker.src.js'
-import { publishData } from '../../../utils/publish-image.js'
-import { Loader } from '../../../utils/loader.js';
-import { QORT_DECIMALS } from '../../../../../crypto/api/constants'
-import { mimeToExtensionMap } from '../../components/qdn-action-constants';
+import {publishData} from '../../../utils/publish-image.js'
+import {Loader} from '../../../utils/loader.js';
+import {QORT_DECIMALS} from '../../../../../crypto/api/constants'
+import {mimeToExtensionMap} from '../../components/qdn-action-constants';
 import {
 	base64ToUint8Array,
 	decryptDeprecatedSingle,
@@ -51,6 +51,9 @@ class WebBrowser extends LitElement {
 			dogeFeePerByte: { type: Number },
 			dgbFeePerByte: { type: Number },
 			rvnFeePerByte: { type: Number },
+			nmcFeePerByte: { type: Number },
+			dashFeePerByte: { type: Number },
+			firoFeePerByte: { type: Number },
 			arrrWalletAddress: { type: String }
 		}
 	}
@@ -177,11 +180,9 @@ class WebBrowser extends LitElement {
 		this.displayUrl = displayUrl
 
 		const getFollowedNames = async () => {
-			let followedNames = await parentEpml.request('apiCall', {
+			this.followedNames = await parentEpml.request('apiCall', {
 				url: `/lists/followedNames?apiKey=${this.getApiKey()}`,
 			})
-
-			this.followedNames = followedNames
 			setTimeout(
 				getFollowedNames,
 				this.config.user.nodeSettings.pingInterval
@@ -189,11 +190,9 @@ class WebBrowser extends LitElement {
 		}
 
 		const getBlockedNames = async () => {
-			let blockedNames = await parentEpml.request('apiCall', {
+			this.blockedNames = await parentEpml.request('apiCall', {
 				url: `/lists/blockedNames?apiKey=${this.getApiKey()}`,
 			})
-
-			this.blockedNames = blockedNames
 			setTimeout(
 				getBlockedNames,
 				this.config.user.nodeSettings.pingInterval
@@ -228,6 +227,9 @@ class WebBrowser extends LitElement {
 		this.dogeFeePerByte = 0.00001000
 		this.dgbFeePerByte = 0.00000010
 		this.rvnFeePerByte = 0.00001125
+		this.nmcFeePerByte = 0.00000150
+		this.dashFeePerByte = 0.00000010
+		this.firoFeePerByte = 0.00000010
 		this.arrrWalletAddress = ''
 
 		let configLoaded = false
@@ -244,6 +246,9 @@ class WebBrowser extends LitElement {
 				this.dgbWallet = window.parent.reduxStore.getState().app.selectedAddress.dgbWallet
 				this.rvnWallet = window.parent.reduxStore.getState().app.selectedAddress.rvnWallet
 				this.arrrWallet = window.parent.reduxStore.getState().app.selectedAddress.arrrWallet
+				this.nmcWallet = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet
+				this.dashWallet = window.parent.reduxStore.getState().app.selectedAddress.dashWallet
+				this.firoWallet = window.parent.reduxStore.getState().app.selectedAddress.firoWallet
 			})
 			parentEpml.subscribe('config', (c) => {
 				this.config = JSON.parse(c)
@@ -299,8 +304,7 @@ class WebBrowser extends LitElement {
 
 	async _handleKeyDown(e) {
 		if (e.key === 'Enter') {
-			const value = e.target.value
-			let newQuery = value
+			let newQuery = e.target.value
 			if (newQuery.endsWith('/')) {
 				newQuery = newQuery.slice(0, -1)
 			}
@@ -323,8 +327,7 @@ class WebBrowser extends LitElement {
 
 	async linkOpenNewTab(link) {
 
-		const value = link
-		let newQuery = value
+		let newQuery = link
 		if (newQuery.endsWith('/')) {
 			newQuery = newQuery.slice(0, -1)
 		}
@@ -449,8 +452,7 @@ class WebBrowser extends LitElement {
 		}
 
 		const data = await response.json()
-		const joinFee = (Number(data) / 1e8).toFixed(8)
-		return joinFee
+		return (Number(data) / 1e8).toFixed(8)
 	}
 
 	async deployAtFee() {
@@ -463,8 +465,7 @@ class WebBrowser extends LitElement {
 		}
 
 		const data = await response.json()
-		const joinFee = (Number(data) / 1e8).toFixed(8)
-		return joinFee
+		return (Number(data) / 1e8).toFixed(8)
 	}
 
 	async getArbitraryFee() {
@@ -494,8 +495,7 @@ class WebBrowser extends LitElement {
 		}
 
 		const data = await response.json()
-		const qortFee = (Number(data) / 1e8).toFixed(8)
-		return qortFee
+		return (Number(data) / 1e8).toFixed(8)
 	}
 
 	async unitVoteFee() {
@@ -508,8 +508,7 @@ class WebBrowser extends LitElement {
 		}
 
 		const data = await response.json()
-		const joinFee = (Number(data) / 1e8).toFixed(8)
-		return joinFee
+		return (Number(data) / 1e8).toFixed(8)
 	}
 
 	async unitCreatePollFee() {
@@ -522,31 +521,28 @@ class WebBrowser extends LitElement {
 		}
 
 		const data = await response.json()
-		const joinFee = (Number(data) / 1e8).toFixed(8)
-		return joinFee
+		return (Number(data) / 1e8).toFixed(8)
 	}
 
 	async _joinGroup(groupId, groupName) {
 		const joinFeeInput = await this.unitJoinFee()
 		const getLastRef = async () => {
-			let myRef = await parentEpml.request('apiCall', {
+			return await parentEpml.request('apiCall', {
 				type: 'api',
 				url: `/addresses/lastreference/${this.selectedAddress.address}`
 			})
-			return myRef
 		}
 
 		const validateReceiver = async () => {
 			let lastRef = await getLastRef()
 			let myTransaction = await makeTransactionRequest(lastRef)
-			const res = getTxnRequestResponse(myTransaction)
-			return res
+			return getTxnRequestResponse(myTransaction)
 		}
 
 		const makeTransactionRequest = async (lastRef) => {
 			let groupdialog1 = get("transactions.groupdialog1")
 			let groupdialog2 = get("transactions.groupdialog2")
-			let myTxnrequest = await parentEpml.request('transaction', {
+			return await parentEpml.request('transaction', {
 				type: 31,
 				nonce: this.selectedAddress.nonce,
 				params: {
@@ -560,7 +556,6 @@ class WebBrowser extends LitElement {
 				},
 				apiVersion: 2
 			})
-			return myTxnrequest
 		}
 
 		const getTxnRequestResponse = (txnResponse) => {
@@ -574,26 +569,23 @@ class WebBrowser extends LitElement {
 				throw new Error('Server error. Could not perform action.')
 			}
 		}
-		const groupRes = await validateReceiver()
-		return groupRes
+		return await validateReceiver()
 
 	}
 
 	async _deployAt(name, description, tags, creationBytes, amount, assetId, atType) {
 		const deployAtFee = await this.deployAtFee()
 		const getLastRef = async () => {
-			let myRef = await parentEpml.request('apiCall', {
+			return await parentEpml.request('apiCall', {
 				type: 'api',
 				url: `/addresses/lastreference/${this.selectedAddress.address}`
 			})
-			return myRef
 		}
 
 		const validateReceiver = async () => {
 			let lastRef = await getLastRef()
 			let myTransaction = await makeTransactionRequest(lastRef)
-			const res = getTxnRequestResponse(myTransaction)
-			return res
+			return getTxnRequestResponse(myTransaction)
 		}
 
 		const makeTransactionRequest = async (lastRef) => {
@@ -601,7 +593,7 @@ class WebBrowser extends LitElement {
 			let deployAtdialog2 = get("transactions.deployAtdialog2")
 			let deployAtdialog3 = get("transactions.deployAtdialog3")
 			let deployAtdialog4 = get("walletpage.wchange12")
-			let myTxnrequest = await parentEpml.request('transaction', {
+			return await parentEpml.request('transaction', {
 				type: 16,
 				nonce: this.selectedAddress.nonce,
 				params: {
@@ -621,7 +613,6 @@ class WebBrowser extends LitElement {
 				},
 				apiVersion: 2
 			})
-			return myTxnrequest
 		}
 
 		const getTxnRequestResponse = (txnResponse) => {
@@ -635,26 +626,23 @@ class WebBrowser extends LitElement {
 				throw new Error('Server error. Could not perform action.')
 			}
 		}
-		const groupRes = await validateReceiver()
-		return groupRes
+		return await validateReceiver()
 
 	}
 
 	async _voteOnPoll(pollName, optionIndex) {
 		const voteFeeInput = await this.unitVoteFee()
 		const getLastRef = async () => {
-			let myRef = await parentEpml.request('apiCall', {
+			return await parentEpml.request('apiCall', {
 				type: 'api',
 				url: `/addresses/lastreference/${this.selectedAddress.address}`
 			})
-			return myRef
 		}
 
 		const validateReceiver = async () => {
 			let lastRef = await getLastRef()
 			let myTransaction = await makeTransactionRequest(lastRef)
-			const res = getTxnRequestResponse(myTransaction)
-			return res
+			return getTxnRequestResponse(myTransaction)
 		}
 
 		const makeTransactionRequest = async (lastRef) => {
@@ -662,7 +650,7 @@ class WebBrowser extends LitElement {
 			let votedialog2 = get("transactions.votedialog2")
 			let feeDialog = get("walletpage.wchange12")
 
-			let myTxnrequest = await parentEpml.request('transaction', {
+			return await parentEpml.request('transaction', {
 				type: 9,
 				nonce: this.selectedAddress.nonce,
 				params: {
@@ -677,7 +665,6 @@ class WebBrowser extends LitElement {
 				},
 				apiVersion: 2
 			})
-			return myTxnrequest
 		}
 
 		const getTxnRequestResponse = (txnResponse) => {
@@ -691,26 +678,23 @@ class WebBrowser extends LitElement {
 				throw new Error('Server error. Could not perform action.')
 			}
 		}
-		const voteRes = await validateReceiver()
-		return voteRes
+		return await validateReceiver()
 
 	}
 
 	async _createPoll(pollName, pollDescription, options, pollOwnerAddress) {
 		const voteFeeInput = await this.unitCreatePollFee()
 		const getLastRef = async () => {
-			let myRef = await parentEpml.request('apiCall', {
+			return await parentEpml.request('apiCall', {
 				type: 'api',
 				url: `/addresses/lastreference/${this.selectedAddress.address}`
 			})
-			return myRef
 		}
 
 		const validateReceiver = async () => {
 			let lastRef = await getLastRef()
 			let myTransaction = await makeTransactionRequest(lastRef)
-			const res = getTxnRequestResponse(myTransaction)
-			return res
+			return getTxnRequestResponse(myTransaction)
 		}
 
 		const makeTransactionRequest = async (lastRef) => {
@@ -720,7 +704,7 @@ class WebBrowser extends LitElement {
 			let votedialog6 = get("transactions.votedialog6")
 			let feeDialog = get("walletpage.wchange12")
 
-			let myTxnrequest = await parentEpml.request('transaction', {
+			return await parentEpml.request('transaction', {
 				type: 8,
 				nonce: this.selectedAddress.nonce,
 				params: {
@@ -738,7 +722,6 @@ class WebBrowser extends LitElement {
 				},
 				apiVersion: 2
 			})
-			return myTxnrequest
 		}
 
 		const getTxnRequestResponse = (txnResponse) => {
@@ -752,8 +735,7 @@ class WebBrowser extends LitElement {
 				throw new Error('Server error. Could not perform action.')
 			}
 		}
-		const voteRes = await validateReceiver()
-		return voteRes
+		return await validateReceiver()
 
 	}
 
@@ -767,6 +749,9 @@ class WebBrowser extends LitElement {
 		this.dgbWallet = window.parent.reduxStore.getState().app.selectedAddress.dgbWallet
 		this.rvnWallet = window.parent.reduxStore.getState().app.selectedAddress.rvnWallet
 		this.arrrWallet = window.parent.reduxStore.getState().app.selectedAddress.arrrWallet
+		this.nmcWallet = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet
+		this.dashWallet = window.parent.reduxStore.getState().app.selectedAddress.dashWallet
+		this.firoWallet = window.parent.reduxStore.getState().app.selectedAddress.firoWallet
 
 		window.addEventListener('storage', () => {
 			const checkLanguage = localStorage.getItem('qortalLanguage')
@@ -774,8 +759,8 @@ class WebBrowser extends LitElement {
 
 			use(checkLanguage)
 
-			if (checkTheme === 'dark') {
-				this.theme = 'dark'
+			if (checkTheme) {
+				this.theme = checkTheme
 			} else {
 				this.theme = 'light'
 			}
@@ -829,8 +814,7 @@ class WebBrowser extends LitElement {
 						break
 					} else {
 						const data = {}
-						const errorMsg = "User declined to share account details"
-						data['error'] = errorMsg
+						data['error'] = "User declined to share account details"
 						response = JSON.stringify(data)
 						break
 					}
@@ -868,8 +852,7 @@ class WebBrowser extends LitElement {
 					} catch (error) {
 
 						const data = {}
-						const errorMsg = error.message || "Error in encrypting data"
-						data['error'] = errorMsg
+						data['error'] = error.message || "Error in encrypting data"
 						response = JSON.stringify(data)
 						break
 					}
@@ -882,9 +865,7 @@ class WebBrowser extends LitElement {
 					try {
 						let data = {}
 						if (!encryptedData) {
-							const errorMsg = `Missing fields: encryptedData`
-
-							data['error'] = errorMsg
+							data['error'] = `Missing fields: encryptedData`
 							response = JSON.stringify(data)
 							break
 
@@ -894,9 +875,7 @@ class WebBrowser extends LitElement {
 						if (startsWithQortalEncryptedData) {
 
 							if (!publicKey) {
-								const errorMsg = `Missing fields: publicKey`
-
-								data['error'] = errorMsg
+								data['error'] = `Missing fields: publicKey`
 								response = JSON.stringify(data)
 								break
 							}
@@ -918,15 +897,13 @@ class WebBrowser extends LitElement {
 
 						}
 
-						const errorMsg = "Unable to decrypt"
-						data['error'] = errorMsg
+						data['error'] = "Unable to decrypt"
 						response = JSON.stringify(data)
 						break
 					} catch (error) {
 
 						const data = {}
-						const errorMsg = error.message || "Error in decrypting data"
-						data['error'] = errorMsg
+						data['error'] = error.message || "Error in decrypting data"
 						response = JSON.stringify(data)
 						break
 					}
@@ -976,8 +953,7 @@ class WebBrowser extends LitElement {
 
 						} catch (error) {
 							const data = {}
-							const errorMsg = "Error in retrieving list"
-							data['error'] = errorMsg
+							data['error'] = "Error in retrieving list"
 							response = JSON.stringify(data)
 						} finally {
 							break
@@ -985,8 +961,7 @@ class WebBrowser extends LitElement {
 
 					} else {
 						const data = {}
-						const errorMsg = "User declined to share list"
-						data['error'] = errorMsg
+						data['error'] = "User declined to share list"
 						response = JSON.stringify(data)
 						break
 					}
@@ -1028,7 +1003,7 @@ class WebBrowser extends LitElement {
 							}
 
 							const bodyToString = JSON.stringify(body)
-							const data = await parentEpml.request('apiCall', {
+							response = await parentEpml.request('apiCall', {
 								type: 'api',
 								method: 'POST',
 								url: `/lists/${list_name}?apiKey=${this.getApiKey()}`,
@@ -1037,11 +1012,9 @@ class WebBrowser extends LitElement {
 									'Content-Type': 'application/json',
 								},
 							})
-							response = data
 						} catch (error) {
 							const data = {}
-							const errorMsg = "Error in adding to list"
-							data['error'] = errorMsg
+							data['error'] = "Error in adding to list"
 							response = JSON.stringify(data)
 						} finally {
 							break
@@ -1049,8 +1022,7 @@ class WebBrowser extends LitElement {
 
 					} else {
 						const data = {}
-						const errorMsg = "User declined add to list"
-						data['error'] = errorMsg
+						data['error'] = "User declined add to list"
 						response = JSON.stringify(data)
 						break
 					}
@@ -1093,7 +1065,7 @@ class WebBrowser extends LitElement {
 
 							const bodyToString = JSON.stringify(body)
 
-							const data = await parentEpml.request('apiCall', {
+							response = await parentEpml.request('apiCall', {
 								type: 'api',
 								method: 'DELETE',
 								url: `/lists/${list_name}?apiKey=${this.getApiKey()}`,
@@ -1102,11 +1074,9 @@ class WebBrowser extends LitElement {
 									'Content-Type': 'application/json',
 								},
 							})
-							response = data
 						} catch (error) {
 							const data = {}
-							const errorMsg = "Error in adding to list"
-							data['error'] = errorMsg
+							data['error'] = "Error in adding to list"
 							response = JSON.stringify(data)
 						} finally {
 							break
@@ -1114,8 +1084,7 @@ class WebBrowser extends LitElement {
 
 					} else {
 						const data = {}
-						const errorMsg = "User declined add to list"
-						data['error'] = errorMsg
+						data['error'] = "User declined add to list"
 						response = JSON.stringify(data)
 						break
 					}
@@ -1143,8 +1112,7 @@ class WebBrowser extends LitElement {
 							response = JSON.stringify(list)
 						} catch (error) {
 							const data = {}
-							const errorMsg = "Error in retrieving friends list"
-							data['error'] = errorMsg
+							data['error'] = "Error in retrieving friends list"
 							response = JSON.stringify(data)
 						}
 
@@ -1152,8 +1120,7 @@ class WebBrowser extends LitElement {
 
 					} else {
 						const data = {}
-						const errorMsg = "User declined to share friends list"
-						data['error'] = errorMsg
+						data['error'] = "User declined to share friends list"
 						response = JSON.stringify(data)
 						break
 					}
@@ -1192,7 +1159,7 @@ class WebBrowser extends LitElement {
 						tabId = frame.dataset.id
 					}
 
-					if (data.name === 'Q-Mail') {
+					if ((data.name === 'QM-Mail') || (data.name === 'Q-Mail')) {
 						localStorage.setItem("Q-Mail-last-visited", Date.now())
 
 					}
@@ -1296,8 +1263,7 @@ class WebBrowser extends LitElement {
 
 						} catch (error) {
 							const obj = {}
-							const errorMsg = error.message || 'Upload failed due to failed encryption'
-							obj['error'] = errorMsg
+							obj['error'] = error.message || 'Upload failed due to failed encryption'
 							response = JSON.stringify(obj)
 							break
 						}
@@ -1341,7 +1307,7 @@ class WebBrowser extends LitElement {
 								tag4,
 								tag5,
 								apiVersion: 2,
-								withFee: res2.userData.isWithFee === true ? true : false,
+								withFee: res2.userData.isWithFee === true,
 								feeAmount: feeAmount
 							})
 
@@ -1350,8 +1316,7 @@ class WebBrowser extends LitElement {
 						} catch (error) {
 							worker.terminate()
 							const obj = {}
-							const errorMsg = error.message || 'Upload failed'
-							obj['error'] = errorMsg
+							obj['error'] = error.message || 'Upload failed'
 							response = JSON.stringify(obj)
 							console.error(error)
 							break
@@ -1530,7 +1495,7 @@ class WebBrowser extends LitElement {
 									tag4,
 									tag5,
 									apiVersion: 2,
-									withFee: res2.userData.isWithFee === true ? true : false,
+									withFee: res2.userData.isWithFee === true,
 									feeAmount: feeAmount
 								})
 
@@ -1547,7 +1512,6 @@ class WebBrowser extends LitElement {
 									reason: errorMsg,
 									identifier: resource.identifier
 								})
-								continue
 							}
 
 						} catch (error) {
@@ -1555,7 +1519,6 @@ class WebBrowser extends LitElement {
 								reason: "Unknown error",
 								identifier: resource.identifier
 							})
-							continue
 						}
 
 
@@ -1565,10 +1528,9 @@ class WebBrowser extends LitElement {
 					if (failedPublishesIdentifiers.length > 0) {
 						response = failedPublishesIdentifiers
 						const obj = {}
-						const errorMsg = {
+						obj['error'] = {
 							unsuccessfulPublishes: failedPublishesIdentifiers
 						}
-						obj['error'] = errorMsg
 						response = JSON.stringify(obj)
 						this.loader.hide()
 						break
@@ -1606,7 +1568,7 @@ class WebBrowser extends LitElement {
 					try {
 						pollInfo = await parentEpml.request("apiCall", {
 							type: "api",
-							url: `/polls/${pollName}`,
+							url: `/polls/${encodeURIComponent(pollName)}`,
 						})
 					} catch (error) {
 						const errorMsg = (error && error.message) || 'Poll not found'
@@ -1630,8 +1592,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(resVoteOnPoll)
 					} catch (error) {
 						const obj = {}
-						const errorMsg = error.message || 'Failed to vote on the poll.'
-						obj['error'] = errorMsg
+						obj['error'] = error.message || 'Failed to vote on the poll.'
 						response = JSON.stringify(obj)
 					} finally {
 						this.loader.hide()
@@ -1670,8 +1631,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(resCreatePoll)
 					} catch (error) {
 						const obj = {}
-						const errorMsg = error.message || 'Failed to created poll.'
-						obj['error'] = errorMsg
+						obj['error'] = error.message || 'Failed to created poll.'
 						response = JSON.stringify(obj)
 					} finally {
 						this.loader.hide()
@@ -1683,8 +1643,7 @@ class WebBrowser extends LitElement {
 				case actions.OPEN_NEW_TAB: {
 					if (!data.qortalLink) {
 						const obj = {}
-						const errorMsg = 'Please enter a qortal link - qortal://...'
-						obj['error'] = errorMsg
+						obj['error'] = 'Please enter a qortal link - qortal://...'
 						response = JSON.stringify(obj)
 						break
 					}
@@ -1696,8 +1655,7 @@ class WebBrowser extends LitElement {
 					} catch (error) {
 						console.log('error', error)
 						const obj = {}
-						const errorMsg = "Invalid qortal link"
-						obj['error'] = errorMsg
+						obj['error'] = "Invalid qortal link"
 						response = JSON.stringify(obj)
 						break
 					}
@@ -1763,8 +1721,7 @@ class WebBrowser extends LitElement {
 
 					} catch (error) {
 						const obj = {}
-						const errorMsg = error.message || "error in pushing notification"
-						obj['error'] = errorMsg
+						obj['error'] = error.message || "error in pushing notification"
 						response = JSON.stringify(obj)
 						break
 
@@ -1775,7 +1732,7 @@ class WebBrowser extends LitElement {
 					const message = data.message
 					const recipient = data.destinationAddress
 					const groupId = data.groupId
-					const isRecipient = groupId ? false : true
+					const isRecipient = !groupId
 					const sendMessage = async (messageText, chatReference) => {
 
 						let _reference = new Uint8Array(64)
@@ -1826,8 +1783,7 @@ class WebBrowser extends LitElement {
 
 							}
 
-							const msgResponse = await _computePow(chatResponse)
-							return msgResponse
+							return await _computePow(chatResponse)
 						}
 
 						const _computePow = async (chatBytes) => {
@@ -1853,8 +1809,7 @@ class WebBrowser extends LitElement {
 								apiVersion: 2
 							})
 
-							const chatResponse = getSendChatResponse(_response)
-							return chatResponse
+							return getSendChatResponse(_response)
 						}
 
 						const getSendChatResponse = (res) => {
@@ -1867,8 +1822,7 @@ class WebBrowser extends LitElement {
 							}
 						}
 
-						const chatResponse = await sendMessageRequest()
-						return chatResponse
+						return await sendMessageRequest()
 					}
 
 					const result = await showModalAndWait(
@@ -1938,8 +1892,7 @@ class WebBrowser extends LitElement {
 						// }
 						try {
 							this.loader.show()
-							const msgResponse = await sendMessage(stringifyMessageObject)
-							response = msgResponse
+							response = await sendMessage(stringifyMessageObject)
 						} catch (error) {
 							console.error(error)
 							if (error.message) {
@@ -2014,8 +1967,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(resJoinGroup)
 					} catch (error) {
 						const obj = {}
-						const errorMsg = error.message || 'Failed to join the group.'
-						obj['error'] = errorMsg
+						obj['error'] = error.message || 'Failed to join the group.'
 						response = JSON.stringify(obj)
 					} finally {
 						this.loader.hide()
@@ -2076,15 +2028,13 @@ class WebBrowser extends LitElement {
 						let fileHandleOptions = {}
 						if (!mimeType) {
 							const obj = {}
-							const errorMsg = 'A mimeType could not be derived'
-							obj['error'] = errorMsg
+							obj['error'] = 'A mimeType could not be derived'
 							response = JSON.stringify(obj)
 							break
 						}
 						if (!fileExtension) {
 							const obj = {}
-							const errorMsg = 'A file extension could not be derived'
-							obj['error'] = errorMsg
+							obj['error'] = 'A file extension could not be derived'
 							response = JSON.stringify(obj)
 							break
 						}
@@ -2117,8 +2067,7 @@ class WebBrowser extends LitElement {
 						} catch (error) {
 							if (error.name === 'AbortError') {
 								const obj = {}
-								const errorMsg = 'User declined the download'
-								obj['error'] = errorMsg
+								obj['error'] = 'User declined the download'
 								response = JSON.stringify(obj)
 								break
 							}
@@ -2128,8 +2077,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(true)
 					} catch (error) {
 						const obj = {}
-						const errorMsg = error.message || 'Failed to initiate download'
-						obj['error'] = errorMsg
+						obj['error'] = error.message || 'Failed to initiate download'
 						response = JSON.stringify(obj)
 					}
 					break
@@ -2162,8 +2110,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(resDeployAt)
 					} catch (error) {
 						const obj = {}
-						const errorMsg = error.message || 'Failed to join the group.'
-						obj['error'] = errorMsg
+						obj['error'] = error.message || 'Failed to join the group.'
 						response = JSON.stringify(obj)
 					} finally {
 						this.loader.hide()
@@ -2240,8 +2187,7 @@ class WebBrowser extends LitElement {
 
 					} catch (error) {
 						const obj = {};
-						const errorMsg = error.message || 'Failed to join the group.';
-						obj['error'] = errorMsg;
+						obj['error'] = error.message || 'Failed to join the group.';
 						response = JSON.stringify(obj);
 					} finally {
 						this.loader.hide();
@@ -2319,8 +2265,7 @@ class WebBrowser extends LitElement {
 
 					} catch (error) {
 						const obj = {};
-						const errorMsg = error.message || 'Failed to set property.';
-						obj['error'] = errorMsg;
+						obj['error'] = error.message || 'Failed to set property.';
 						response = JSON.stringify(obj);
 					} finally {
 						this.loader.hide();
@@ -2356,8 +2301,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(true);
 					} catch (error) {
 						const obj = {};
-						const errorMsg = error.message || 'Failed to open profile';
-						obj['error'] = errorMsg;
+						obj['error'] = error.message || 'Failed to open profile';
 						response = JSON.stringify(obj);
 					}
 					break;
@@ -2425,6 +2369,18 @@ class WebBrowser extends LitElement {
 							case 'ARRR':
 								userWallet['address'] = arrrAddress
 								break
+							case 'NMC':
+								userWallet['address'] = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet.address
+								userWallet['publickey'] = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet.derivedMasterPublicKey
+								break
+							case 'DASH':
+								userWallet['address'] = window.parent.reduxStore.getState().app.selectedAddress.dashWallet.address
+								userWallet['publickey'] = window.parent.reduxStore.getState().app.selectedAddress.dashWallet.derivedMasterPublicKey
+								break
+							case 'FIRO':
+								userWallet['address'] = window.parent.reduxStore.getState().app.selectedAddress.firoWallet.address
+								userWallet['publickey'] = window.parent.reduxStore.getState().app.selectedAddress.firoWallet.derivedMasterPublicKey
+								break
 							default:
 								break
 						}
@@ -2454,7 +2410,7 @@ class WebBrowser extends LitElement {
 						response = JSON.stringify(data)
 						break
 					}
-					// Params: data.coin (QORT / BTC / LTC / DOGE / DGB / RVN / ARRR)
+					// Params: data.coin (QORT / BTC / LTC / DOGE / DGB / RVN / ARRR / NMC / DASH / FIRO)
 					// TODO: prompt user to share wallet balance. If they confirm, call `GET /crosschain/:coin/walletbalance`, or for QORT, call `GET /addresses/balance/:address`
 					// then set the response string from the core to the `response` variable (defined above)
 					// If they decline, send back JSON that includes an `error` key, such as `{"error": "User declined request"}`
@@ -2468,17 +2424,15 @@ class WebBrowser extends LitElement {
 							let qortAddress = window.parent.reduxStore.getState().app.selectedAddress.address
 							try {
 								this.loader.show()
-								const QORTBalance = await parentEpml.request('apiCall', {
+								response = await parentEpml.request('apiCall', {
 									url: `/addresses/balance/${qortAddress}?apiKey=${this.getApiKey()}`,
 								})
-								response = QORTBalance
 
 
 							} catch (error) {
 								console.error(error)
 								const data = {}
-								const errorMsg = error.message || get("browserpage.bchange21")
-								data['error'] = errorMsg
+								data['error'] = error.message || get("browserpage.bchange21")
 								response = JSON.stringify(data)
 
 							} finally {
@@ -2513,6 +2467,18 @@ class WebBrowser extends LitElement {
 									_url = `/crosschain/arrr/walletbalance?apiKey=${this.getApiKey()}`
 									_body = window.parent.reduxStore.getState().app.selectedAddress.arrrWallet.seed58
 									break
+								case 'NMC':
+									_url = `/crosschain/nmc/walletbalance?apiKey=${this.getApiKey()}`
+									_body = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet.derivedMasterPublicKey
+									break
+								case 'DASH':
+									_url = `/crosschain/dash/walletbalance?apiKey=${this.getApiKey()}`
+									_body = window.parent.reduxStore.getState().app.selectedAddress.dashWallet.derivedMasterPublicKey
+									break
+								case 'FIRO':
+									_url = `/crosschain/firo/walletbalance?apiKey=${this.getApiKey()}`
+									_body = window.parent.reduxStore.getState().app.selectedAddress.firoWallet.derivedMasterPublicKey
+									break
 								default:
 									break
 							}
@@ -2525,8 +2491,7 @@ class WebBrowser extends LitElement {
 								})
 								if (isNaN(Number(res))) {
 									const data = {}
-									const errorMsg = get("browserpage.bchange21")
-									data['error'] = errorMsg
+									data['error'] = get("browserpage.bchange21")
 									response = JSON.stringify(data)
 									return
 								} else {
@@ -2535,8 +2500,7 @@ class WebBrowser extends LitElement {
 							} catch (error) {
 								console.error(error)
 								const data = {}
-								const errorMsg = error.message || get("browserpage.bchange21")
-								data['error'] = errorMsg
+								data['error'] = error.message || get("browserpage.bchange21")
 								response = JSON.stringify(data)
 								return
 							} finally {
@@ -2597,8 +2561,7 @@ class WebBrowser extends LitElement {
 						} catch (error) {
 							console.error(error)
 							const data = {}
-							const errorMsg = error.message || get("browserpage.bchange21")
-							data['error'] = errorMsg
+							data['error'] = error.message || get("browserpage.bchange21")
 							response = JSON.stringify(data)
 							return
 						} finally {
@@ -2644,8 +2607,7 @@ class WebBrowser extends LitElement {
 					} catch (error) {
 							console.error(error)
 							const data = {}
-							const errorMsg = error.message || 'Error in retrieving server info'
-							data['error'] = errorMsg
+						data['error'] = error.message || 'Error in retrieving server info'
 							response = JSON.stringify(data)
 							return
 						} finally {
@@ -2655,17 +2617,136 @@ class WebBrowser extends LitElement {
 					break
 				}
 
+				case actions.GET_TX_ACTIVITY_SUMMARY: {
+					const requiredFields = ['coin']
+					const missingFields = []
+
+					requiredFields.forEach((field) => {
+						if (!data[field]) {
+							missingFields.push(field)
+						}
+					})
+
+					if (missingFields.length > 0) {
+						const missingFieldsString = missingFields.join(', ')
+						const errorMsg = `Missing fields: ${missingFieldsString}`
+						let data = {}
+						data['error'] = errorMsg
+						response = JSON.stringify(data)
+						break
+					}
+
+					try {
+						let coin = data.coin;
+						response = await parentEpml.request('apiCall', {
+							type: 'api',
+							method: 'POST',
+							url: `/crosschain/txactivity?apiKey=${this.getApiKey()}&foreignBlockchain=${coin}`,
+							headers: {
+								'Accept': '*/*',
+								'Content-Type': 'application/json'
+							},
+						})
+					} catch (error) {
+						const data = {}
+						data['error'] = "Error in tx activity summary"
+						response = JSON.stringify(data)
+					} finally {
+						break
+					}
+				}
+
+				case actions.GET_FOREIGN_FEE: {
+					const requiredFields = ['coin','type']
+					const missingFields = []
+
+					requiredFields.forEach((field) => {
+						if (!data[field]) {
+							missingFields.push(field)
+						}
+					})
+
+					if (missingFields.length > 0) {
+						const missingFieldsString = missingFields.join(', ')
+						const errorMsg = `Missing fields: ${missingFieldsString}`
+						let data = {}
+						data['error'] = errorMsg
+						response = JSON.stringify(data)
+						break
+					}
+
+					try {
+						let coin = data.coin;
+						let type = data.type;
+						response = await parentEpml.request('apiCall', {
+							type: 'api',
+							method: 'GET',
+							url: `/crosschain/${coin}/${type}?apiKey=${this.getApiKey()}`,
+							headers: {
+								'Accept': '*/*',
+								'Content-Type': 'application/json'
+							},
+						})
+					} catch (error) {
+						const data = {}
+						data['error'] = "Error in get foreign fee"
+						response = JSON.stringify(data)
+					} finally {
+						break
+					}
+				}
+
+				case actions.UPDATE_FOREIGN_FEE: {
+					const requiredFields = ['coin','type']
+					const missingFields = []
+
+					requiredFields.forEach((field) => {
+						if (!data[field]) {
+							missingFields.push(field)
+						}
+					})
+
+					if (missingFields.length > 0) {
+						const missingFieldsString = missingFields.join(', ')
+						const errorMsg = `Missing fields: ${missingFieldsString}`
+						let data = {}
+						data['error'] = errorMsg
+						response = JSON.stringify(data)
+						break
+					}
+
+					try {
+						let coin = data.coin;
+						let type = data.type;
+						let value = data.value;
+						response = await parentEpml.request('apiCall', {
+							type: 'api',
+							method: 'POST',
+							url: `/crosschain/${coin}/update${type}?apiKey=${this.getApiKey()}`,
+							headers: {
+								'Accept': '*/*',
+								'Content-Type': 'application/json'
+							},
+							body: `${value}`
+						})
+					} catch (error) {
+						const data = {}
+						data['error'] = "Error in update foreign fee"
+						response = JSON.stringify(data)
+					} finally {
+						break
+					}
+				}
+
 				case actions.GET_DAY_SUMMARY: {
 					try {
-						const summary = await parentEpml.request('apiCall', {
+						response = await parentEpml.request('apiCall', {
 							type: 'api',
 							url: `/admin/summary?apiKey=${this.getApiKey()}`,
 						})
-						response = summary
 					} catch (error) {
 						const data = {}
-						const errorMsg = "Error in retrieving summary"
-						data['error'] = errorMsg
+						data['error'] = "Error in retrieving summary"
 						response = JSON.stringify(data)
 					} finally {
 						break
@@ -2685,7 +2766,7 @@ class WebBrowser extends LitElement {
 					if (missingFields.length > 0) {
 						const missingFieldsString = missingFields.join(', ')
 						const errorMsg = `Missing fields: ${missingFieldsString}`
-						showErrorAndWait("MISSING_FIELDS", errorMsg)
+						await showErrorAndWait("MISSING_FIELDS", errorMsg)
 						let data = {}
 						data['error'] = errorMsg
 						response = JSON.stringify(data)
@@ -2711,7 +2792,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch QORT Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " QORT " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -2733,7 +2814,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -2742,7 +2823,7 @@ class WebBrowser extends LitElement {
 
 						if (amount <= 0) {
 							let errorMsg = "Invalid Amount!"
-							showErrorAndWait("INVALID_AMOUNT", errorMsg)
+							await showErrorAndWait("INVALID_AMOUNT", errorMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -2751,7 +2832,7 @@ class WebBrowser extends LitElement {
 
 						if (recipient.length === 0) {
 							let errorMsg = "Receiver cannot be empty!"
-							showErrorAndWait("NO_RECEIVER", errorMsg)
+							await showErrorAndWait("NO_RECEIVER", errorMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -2773,7 +2854,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -2794,8 +2875,7 @@ class WebBrowser extends LitElement {
 						}
 
 						const validateAddress = async (receiverAddress) => {
-							let myAddress = await window.parent.validateAddress(receiverAddress)
-							return myAddress
+							return await window.parent.validateAddress(receiverAddress)
 						}
 
 						const validateReceiver = async (recipient) => {
@@ -2810,19 +2890,17 @@ class WebBrowser extends LitElement {
 
 							if (isAddress) {
 								let myTransaction = await makeTransactionRequest(recipient, lastRef)
-								const res = getTxnRequestResponse(myTransaction)
-								return res
+								return getTxnRequestResponse(myTransaction)
 							} else {
 								let myNameRes = await validateName(recipient)
 								if (myNameRes !== false) {
 									let myNameAddress = myNameRes.owner
 									let myTransaction = await makeTransactionRequest(myNameAddress, lastRef)
-									const res = getTxnRequestResponse(myTransaction)
-									return res
+									return getTxnRequestResponse(myTransaction)
 								} else {
 									let errorMsg = get("walletpage.wchange29")
 									let pleaseMsg = get("walletpage.wchange44")
-									showErrorAndWait("INVALID_RECEIVER", errorMsg, pleaseMsg)
+									await showErrorAndWait("INVALID_RECEIVER", errorMsg, pleaseMsg)
 									throw new Error(errorMsg)
 								}
 							}
@@ -2855,7 +2933,7 @@ class WebBrowser extends LitElement {
 							let dialogName = get("login.name")
 							let dialogto = get("transactions.to")
 							let recipientName = await getName(myReceiver)
-							let myTxnrequest = await parentEpml.request('transaction', {
+							return await parentEpml.request('transaction', {
 								type: 2,
 								nonce: this.myAddress.nonce,
 								params: {
@@ -2871,7 +2949,6 @@ class WebBrowser extends LitElement {
 								},
 								apiVersion: 2
 							})
-							return myTxnrequest
 						}
 
 						const getTxnRequestResponse = (txnResponse) => {
@@ -2889,8 +2966,7 @@ class WebBrowser extends LitElement {
 						}
 
 						try {
-							const result = await validateReceiver(recipient)
-							response = result
+							response = await validateReceiver(recipient)
 						} catch (error) {
 							console.error(error)
 							response = '{"error": "Request could not be fulfilled"}'
@@ -2917,7 +2993,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch BTC Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " BTC " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -2934,7 +3010,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -2958,7 +3034,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -2972,8 +3048,7 @@ class WebBrowser extends LitElement {
 								bitcoinAmount: amount,
 								feePerByte: feePerByte * QORT_DECIMALS
 							}
-							const response = await parentEpml.request('sendBtc', opts)
-							return response
+							return await parentEpml.request('sendBtc', opts)
 						}
 
 						const manageResponse = (response) => {
@@ -3027,7 +3102,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch LTC Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " LTC " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3044,7 +3119,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3068,7 +3143,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -3082,8 +3157,7 @@ class WebBrowser extends LitElement {
 								litecoinAmount: amount,
 								feePerByte: feePerByte * QORT_DECIMALS
 							}
-							const response = await parentEpml.request('sendLtc', opts)
-							return response
+							return await parentEpml.request('sendLtc', opts)
 						}
 
 						const manageResponse = (response) => {
@@ -3137,7 +3211,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch DOGE Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " DOGE " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3154,7 +3228,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3178,7 +3252,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -3192,8 +3266,7 @@ class WebBrowser extends LitElement {
 								dogecoinAmount: amount,
 								feePerByte: feePerByte * QORT_DECIMALS
 							}
-							const response = await parentEpml.request('sendDoge', opts)
-							return response
+							return await parentEpml.request('sendDoge', opts)
 						}
 
 						const manageResponse = (response) => {
@@ -3247,7 +3320,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch DGB Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " DGB " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3264,7 +3337,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3288,7 +3361,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -3302,8 +3375,7 @@ class WebBrowser extends LitElement {
 								digibyteAmount: amount,
 								feePerByte: feePerByte * QORT_DECIMALS
 							}
-							const response = await parentEpml.request('sendDgb', opts)
-							return response
+							return await parentEpml.request('sendDgb', opts)
 						}
 
 						const manageResponse = (response) => {
@@ -3357,7 +3429,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch RVN Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " RVN " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3374,7 +3446,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3398,7 +3470,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -3412,8 +3484,7 @@ class WebBrowser extends LitElement {
 								ravencoinAmount: amount,
 								feePerByte: feePerByte * QORT_DECIMALS
 							}
-							const response = await parentEpml.request('sendRvn', opts)
-							return response
+							return await parentEpml.request('sendRvn', opts)
 						}
 
 						const manageResponse = (response) => {
@@ -3467,7 +3538,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Failed to Fetch ARRR Balance. Try again!"
 							let failedMsg = get("walletpage.wchange33") + " ARRR " + get("general.balance")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3484,7 +3555,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "Insufficient Funds!"
 							let failedMsg = get("walletpage.wchange26")
 							let pleaseMsg = get("walletpage.wchange44")
-							showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
 							let obj = {}
 							obj['error'] = errorMsg
 							response = JSON.stringify(obj)
@@ -3508,7 +3579,7 @@ class WebBrowser extends LitElement {
 							let errorMsg = "User declined request"
 							let myMsg1 = get("transactions.declined")
 							let myMsg2 = get("walletpage.wchange44")
-							showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
 							response = '{"error": "User declined request"}'
 							break
 						}
@@ -3522,8 +3593,333 @@ class WebBrowser extends LitElement {
 								arrrAmount: amount,
 								memo: memo
 							}
-							const response = await parentEpml.request('sendArrr', opts)
-							return response
+							return await parentEpml.request('sendArrr', opts)
+						}
+
+						const manageResponse = (response) => {
+							if (response.length === 64) {
+								this.loader.hide()
+								let successMsg = get("walletpage.wchange30")
+								let patientMsg = get("walletpage.wchange43")
+								showErrorAndWait("TRANSACTION_SUCCESS", successMsg, patientMsg)
+							} else if (response === false) {
+								this.loader.hide()
+								let errorMsg = get("walletpage.wchange31")
+								let pleaseMsg = get("walletpage.wchange44")
+								showErrorAndWait("TRANSACTION_FAILED", errorMsg, pleaseMsg)
+								throw new Error(response)
+							} else {
+								this.loader.hide()
+								let errorMsg = response.message
+								let pleaseMsg = get("walletpage.wchange44")
+								showErrorAndWait("TRANSACTION_FAILED", errorMsg, pleaseMsg)
+								throw new Error(response)
+							}
+						}
+
+						try {
+							const res = await makeRequest()
+							manageResponse(res)
+						} catch (error) {
+							console.error(error)
+							response = '{"error": "Request could not be fulfilled"}'
+						} finally {
+							this.loader.hide()
+						}
+						break
+					} else if (checkCoin === "NMC") {
+						this.loader.show()
+						const amount = Number(data.amount)
+						const recipient = data.destinationAddress
+						const coin = data.coin
+						const xprv58 = this.nmcWallet.derivedMasterPrivateKey
+						const feePerByte = data.fee ? data.fee : this.nmcFeePerByte
+
+						const nmcWalletBalance = await parentEpml.request('apiCall', {
+							url: `/crosschain/nmc/walletbalance?apiKey=${this.getApiKey()}`,
+							method: 'POST',
+							body: `${this.nmcWallet.derivedMasterPublicKey}`
+						})
+
+						if (isNaN(Number(nmcWalletBalance))) {
+							this.loader.hide()
+							let errorMsg = "Failed to Fetch NMC Balance. Try again!"
+							let failedMsg = get("walletpage.wchange33") + " NMC " + get("general.balance")
+							let pleaseMsg = get("walletpage.wchange44")
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							let obj = {}
+							obj['error'] = errorMsg
+							response = JSON.stringify(obj)
+							break
+						}
+
+						const nmcWalletBalanceDecimals = Number(nmcWalletBalance)
+						const nmcAmountDecimals = Number(amount) * QORT_DECIMALS
+						const balance = (Number(nmcWalletBalance) / 1e8).toFixed(8)
+						const fee = feePerByte * 500 // default 0.00075000
+
+						if (nmcAmountDecimals + (fee * QORT_DECIMALS) > nmcWalletBalanceDecimals) {
+							this.loader.hide()
+							let errorMsg = "Insufficient Funds!"
+							let failedMsg = get("walletpage.wchange26")
+							let pleaseMsg = get("walletpage.wchange44")
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							let obj = {}
+							obj['error'] = errorMsg
+							response = JSON.stringify(obj)
+							break
+						}
+
+						this.loader.hide()
+
+						const processPayment = await showModalAndWait(
+							actions.SEND_COIN,
+							{
+								amount,
+								recipient,
+								coin,
+								balance,
+								fee
+							}
+						)
+
+						if (processPayment.action === 'reject') {
+							let errorMsg = "User declined request"
+							let myMsg1 = get("transactions.declined")
+							let myMsg2 = get("walletpage.wchange44")
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							response = '{"error": "User declined request"}'
+							break
+						}
+
+						this.loader.show()
+
+						const makeRequest = async () => {
+							const opts = {
+								xprv58: xprv58,
+								receivingAddress: recipient,
+								namecoinAmount: amount,
+								feePerByte: feePerByte * QORT_DECIMALS
+							}
+							return await parentEpml.request('sendNmc', opts)
+						}
+
+						const manageResponse = (response) => {
+							if (response.length === 64) {
+								this.loader.hide()
+								let successMsg = get("walletpage.wchange30")
+								let patientMsg = get("walletpage.wchange43")
+								showErrorAndWait("TRANSACTION_SUCCESS", successMsg, patientMsg)
+							} else if (response === false) {
+								this.loader.hide()
+								let errorMsg = get("walletpage.wchange31")
+								let pleaseMsg = get("walletpage.wchange44")
+								showErrorAndWait("TRANSACTION_FAILED", errorMsg, pleaseMsg)
+								throw new Error(response)
+							} else {
+								this.loader.hide()
+								let errorMsg = response.message
+								let pleaseMsg = get("walletpage.wchange44")
+								showErrorAndWait("TRANSACTION_FAILED", errorMsg, pleaseMsg)
+								throw new Error(response)
+							}
+						}
+
+						try {
+							const res = await makeRequest()
+							manageResponse(res)
+							response = res
+						} catch (error) {
+							console.error(error)
+							response = '{"error": "Request could not be fulfilled"}'
+						} finally {
+							this.loader.hide()
+						}
+						break
+					} else if (checkCoin === "DASH") {
+						this.loader.show()
+						const amount = Number(data.amount)
+						const recipient = data.destinationAddress
+						const coin = data.coin
+						const xprv58 = this.dashWallet.derivedMasterPrivateKey
+						const feePerByte = data.fee ? data.fee : this.dashFeePerByte
+
+						const dashWalletBalance = await parentEpml.request('apiCall', {
+							url: `/crosschain/dash/walletbalance?apiKey=${this.getApiKey()}`,
+							method: 'POST',
+							body: `${this.dashWallet.derivedMasterPublicKey}`
+						})
+
+						if (isNaN(Number(dashWalletBalance))) {
+							this.loader.hide()
+							let errorMsg = "Failed to Fetch DASH Balance. Try again!"
+							let failedMsg = get("walletpage.wchange33") + " DASH " + get("general.balance")
+							let pleaseMsg = get("walletpage.wchange44")
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							let obj = {}
+							obj['error'] = errorMsg
+							response = JSON.stringify(obj)
+							break
+						}
+
+						const dashWalletBalanceDecimals = Number(dashWalletBalance)
+						const dashAmountDecimals = Number(amount) * QORT_DECIMALS
+						const balance = (Number(dashWalletBalance) / 1e8).toFixed(8)
+						const fee = feePerByte * 500 // default 0.00500000
+
+						if (dashAmountDecimals + (fee * QORT_DECIMALS) > dashWalletBalanceDecimals) {
+							this.loader.hide()
+							let errorMsg = "Insufficient Funds!"
+							let failedMsg = get("walletpage.wchange26")
+							let pleaseMsg = get("walletpage.wchange44")
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							let obj = {}
+							obj['error'] = errorMsg
+							response = JSON.stringify(obj)
+							break
+						}
+
+						this.loader.hide()
+
+						const processPayment = await showModalAndWait(
+							actions.SEND_COIN,
+							{
+								amount,
+								recipient,
+								coin,
+								balance,
+								fee
+							}
+						)
+
+						if (processPayment.action === 'reject') {
+							let errorMsg = "User declined request"
+							let myMsg1 = get("transactions.declined")
+							let myMsg2 = get("walletpage.wchange44")
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							response = '{"error": "User declined request"}'
+							break
+						}
+
+						this.loader.show()
+
+						const makeRequest = async () => {
+							const opts = {
+								xprv58: xprv58,
+								receivingAddress: recipient,
+								dashAmount: amount,
+								feePerByte: feePerByte * QORT_DECIMALS
+							}
+							return await parentEpml.request('sendDash', opts)
+						}
+
+						const manageResponse = (response) => {
+							if (response.length === 64) {
+								this.loader.hide()
+								let successMsg = get("walletpage.wchange30")
+								let patientMsg = get("walletpage.wchange43")
+								showErrorAndWait("TRANSACTION_SUCCESS", successMsg, patientMsg)
+							} else if (response === false) {
+								this.loader.hide()
+								let errorMsg = get("walletpage.wchange31")
+								let pleaseMsg = get("walletpage.wchange44")
+								showErrorAndWait("TRANSACTION_FAILED", errorMsg, pleaseMsg)
+								throw new Error(response)
+							} else {
+								this.loader.hide()
+								let errorMsg = response.message
+								let pleaseMsg = get("walletpage.wchange44")
+								showErrorAndWait("TRANSACTION_FAILED", errorMsg, pleaseMsg)
+								throw new Error(response)
+							}
+						}
+
+						try {
+							const res = await makeRequest()
+							manageResponse(res)
+							response = res
+						} catch (error) {
+							console.error(error)
+							response = '{"error": "Request could not be fulfilled"}'
+						} finally {
+							this.loader.hide()
+						}
+						break
+					} else if (checkCoin === "FIRO") {
+						this.loader.show()
+						const amount = Number(data.amount)
+						const recipient = data.destinationAddress
+						const coin = data.coin
+						const xprv58 = this.firoWallet.derivedMasterPrivateKey
+						const feePerByte = data.fee ? data.fee : this.firoFeePerByte
+
+						const firoWalletBalance = await parentEpml.request('apiCall', {
+							url: `/crosschain/firo/walletbalance?apiKey=${this.getApiKey()}`,
+							method: 'POST',
+							body: `${this.firoWallet.derivedMasterPublicKey}`
+						})
+
+						if (isNaN(Number(firoWalletBalance))) {
+							this.loader.hide()
+							let errorMsg = "Failed to Fetch FIRO Balance. Try again!"
+							let failedMsg = get("walletpage.wchange33") + " FIRO " + get("general.balance")
+							let pleaseMsg = get("walletpage.wchange44")
+							await showErrorAndWait("FAILED_FETCH", failedMsg, pleaseMsg)
+							let obj = {}
+							obj['error'] = errorMsg
+							response = JSON.stringify(obj)
+							break
+						}
+
+						const firoWalletBalanceDecimals = Number(firoWalletBalance)
+						const firoAmountDecimals = Number(amount) * QORT_DECIMALS
+						const balance = (Number(firoWalletBalance) / 1e8).toFixed(8)
+						const fee = feePerByte * 500 // default 0.00500000
+
+						if (firoAmountDecimals + (fee * QORT_DECIMALS) > firoWalletBalanceDecimals) {
+							this.loader.hide()
+							let errorMsg = "Insufficient Funds!"
+							let failedMsg = get("walletpage.wchange26")
+							let pleaseMsg = get("walletpage.wchange44")
+							await showErrorAndWait("INSUFFICIENT_FUNDS", failedMsg, pleaseMsg)
+							let obj = {}
+							obj['error'] = errorMsg
+							response = JSON.stringify(obj)
+							break
+						}
+
+						this.loader.hide()
+
+						const processPayment = await showModalAndWait(
+							actions.SEND_COIN,
+							{
+								amount,
+								recipient,
+								coin,
+								balance,
+								fee
+							}
+						)
+
+						if (processPayment.action === 'reject') {
+							let errorMsg = "User declined request"
+							let myMsg1 = get("transactions.declined")
+							let myMsg2 = get("walletpage.wchange44")
+							await showErrorAndWait("DECLINED_REQUEST", myMsg1, myMsg2)
+							response = '{"error": "User declined request"}'
+							break
+						}
+
+						this.loader.show()
+
+						const makeRequest = async () => {
+							const opts = {
+								xprv58: xprv58,
+								receivingAddress: recipient,
+								firoAmount: amount,
+								feePerByte: feePerByte * QORT_DECIMALS
+							}
+							return await parentEpml.request('sendFiro', opts)
 						}
 
 						const manageResponse = (response) => {
@@ -3624,6 +4020,18 @@ class WebBrowser extends LitElement {
 				break
 			case 'ARRR':
 				break
+			case 'NMC':
+				userWallet['address'] = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet.address
+				userWallet['publickey'] = window.parent.reduxStore.getState().app.selectedAddress.nmcWallet.derivedMasterPublicKey
+				break
+			case 'DASH':
+				userWallet['address'] = window.parent.reduxStore.getState().app.selectedAddress.dashWallet.address
+				userWallet['publickey'] = window.parent.reduxStore.getState().app.selectedAddress.dashWallet.derivedMasterPublicKey
+				break
+			case 'FIRO':
+				userWallet['address'] = window.parent.reduxStore.getState().app.selectedAddress.firoWallet.address
+				userWallet['publickey'] = window.parent.reduxStore.getState().app.selectedAddress.firoWallet.derivedMasterPublicKey
+				break
 			default:
 				break
 		}
@@ -3640,8 +4048,8 @@ class WebBrowser extends LitElement {
 
 	changeTheme() {
 		const checkTheme = localStorage.getItem('qortalTheme')
-		if (checkTheme === 'dark') {
-			this.theme = 'dark'
+		if (checkTheme) {
+			this.theme = checkTheme
 		} else {
 			this.theme = 'light'
 		}
@@ -3944,8 +4352,7 @@ class WebBrowser extends LitElement {
 			window.parent.reduxStore.getState().app.nodeConfig.knownNodes[
 			window.parent.reduxStore.getState().app.nodeConfig.node
 			]
-		let apiKey = myNode.apiKey
-		return apiKey
+		return myNode.apiKey
 	}
 }
 
@@ -3980,7 +4387,7 @@ async function showModalAndWait(type, data) {
 						${type === actions.PUBLISH_MULTIPLE_QDN_RESOURCES ? `
 							<div class="modal-subcontainer">
 								<p class="modal-paragraph">${get("browserpage.bchange19")}</p>
-								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange45")}:</span> ${data.encrypt ? true : false}</p>
+								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange45")}:</span> ${(!!data.encrypt)}</p>
 								<table>
 									${data.resources.map((resource) => `
 										<tr>
@@ -4003,7 +4410,7 @@ async function showModalAndWait(type, data) {
 								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange30")}:</span> ${data.service}</p>
 								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange31")}:</span> ${data.name}</p>
 								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange32")}:</span> ${data.identifier}</p>
-								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange45")}:</span> ${data.encrypt ? true : false}</p>
+								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph"><span style="font-weight: bold">${get("browserpage.bchange45")}:</span> ${(!!data.encrypt)}</p>
 								<div class="checkbox-row">
 								<p style="font-size: 16px;overflow-wrap: anywhere;" class="modal-paragraph">${get('browserpage.bchange47')} <span style="font-weight: bold">${data.feeAmount} QORT fee</span></p>
 								</div>
@@ -4124,7 +4531,7 @@ async function showModalAndWait(type, data) {
 		const modalContent = modal.querySelector('.modal-content')
 		modalContent.addEventListener('click', (e) => {
 			e.stopPropagation()
-			return
+
 		})
 		const backdropClick = document.getElementById('backdrop')
 		backdropClick.addEventListener('click', () => {

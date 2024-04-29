@@ -11,6 +11,7 @@
 		"finnish": "Finlandez",
 		"french": "Franceza",
 		"german": "Germana",
+		"hebrew": "Ebraică",
 		"hindi": "Hindi",
 		"hungarian": "Maghiara",
 		"italian": "Italiana",
@@ -213,7 +214,8 @@
 		"arrr1": "Portoletul ARRR nu este inițializat !",
 		"arrr2": "Vă rugăm să accesați fila Portofel și să inițializați mai întâi portofelul arrr.",
 		"arrr3": "Am nevoie de actualizare de bază !",
-		"arrr4": "Pentru a salva cheia privată a portofelului dvs. arrr, aveți nevoie mai întâi de o actualizare de bază !"
+		"arrr4": "Pentru a salva cheia privată a portofelului dvs. arrr, aveți nevoie mai întâi de o actualizare de bază !",
+		"sync_indicator": "Dezactivați fereastra pop-up indicator de sincronizare"
 	},
 	"appinfo": {
 		"blockheight": "Dimensiunea blocului",

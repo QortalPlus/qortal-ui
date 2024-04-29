@@ -2,7 +2,7 @@ import {css, html, LitElement} from 'lit'
 import {render} from 'lit/html.js'
 import {Epml} from '../../../epml.js'
 import isElectron from 'is-electron'
-import {get, registerTranslateConfig, translate, use} from '../../../../core/translate/index.js'
+import {get, registerTranslateConfig, translate, use} from '../../../../core/translate'
 import '@polymer/paper-spinner/paper-spinner-lite.js'
 import '@material/mwc-icon'
 import '@material/mwc-textfield'
@@ -267,8 +267,8 @@ class NodeManagement extends LitElement {
 
             use(checkLanguage)
 
-            if (checkTheme === 'dark') {
-                this.theme = 'dark'
+            if (checkTheme) {
+                this.theme = checkTheme
             } else {
                 this.theme = 'light'
             }
@@ -363,8 +363,8 @@ class NodeManagement extends LitElement {
 
     changeTheme() {
         const checkTheme = localStorage.getItem('qortalTheme')
-        if (checkTheme === 'dark') {
-            this.theme = 'dark'
+        if (checkTheme) {
+            this.theme = checkTheme
         } else {
             this.theme = 'light'
         }
@@ -581,8 +581,7 @@ class NodeManagement extends LitElement {
 
     getApiKey() {
         const myNode = window.parent.reduxStore.getState().app.nodeConfig.knownNodes[window.parent.reduxStore.getState().app.nodeConfig.node]
-        let apiKey = myNode.apiKey
-        return apiKey
+		return myNode.apiKey
     }
 
     isEmptyArray(arr) {

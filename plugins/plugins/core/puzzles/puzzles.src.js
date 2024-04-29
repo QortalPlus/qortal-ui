@@ -2,7 +2,7 @@ import {css, html, LitElement} from 'lit'
 import {render} from 'lit/html.js'
 import {Epml} from '../../../epml.js'
 import isElectron from 'is-electron'
-import {registerTranslateConfig, translate, use} from '../../../../core/translate/index.js'
+import {registerTranslateConfig, translate, use} from '../../../../core/translate'
 import nacl from '../../../../crypto/api/deps/nacl-fast.js'
 import Base58 from '../../../../crypto/api/deps/Base58.js'
 import publicKeyToAddress from '../../../../crypto/api/wallet/publicKeyToAddress.js'
@@ -210,8 +210,8 @@ class Puzzles extends LitElement {
 
             use(checkLanguage)
 
-            if (checkTheme === 'dark') {
-                this.theme = 'dark'
+            if (checkTheme) {
+                this.theme = checkTheme
             } else {
                 this.theme = 'light'
             }
@@ -368,8 +368,8 @@ class Puzzles extends LitElement {
 
     changeTheme() {
         const checkTheme = localStorage.getItem('qortalTheme')
-        if (checkTheme === 'dark') {
-            this.theme = 'dark';
+        if (checkTheme) {
+            this.theme = checkTheme;
         } else {
             this.theme = 'light';
         }
@@ -426,10 +426,9 @@ class Puzzles extends LitElement {
 
         // Get Last Ref
         const getLastRef = async (address) => {
-            let myRef = await parentEpml.request('apiCall', {
-                url: `/addresses/lastreference/${address}`
-            })
-            return myRef
+			return await parentEpml.request('apiCall', {
+				url: `/addresses/lastreference/${address}`
+			})
         }
 
         let lastRef = await getLastRef(_guessAddress)

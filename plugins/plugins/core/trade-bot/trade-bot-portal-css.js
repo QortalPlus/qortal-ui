@@ -479,6 +479,18 @@ export const tradebotStyles = css`
     background-image: url('/img/qortarrr.png');
   }
 
+  .nmc.coinName:before {
+    background-image: url('/img/qortnmc.png');
+  }
+
+  .dash.coinName:before {
+    background-image: url('/img/qortdash.png');
+  }
+
+  .firo.coinName:before {
+    background-image: url('/img/qortfiro.png');
+  }
+
   .coinName {
     display: inline-block;
     height: 26px;

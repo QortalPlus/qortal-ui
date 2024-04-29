@@ -1,7 +1,7 @@
-import { LitElement, html, css } from 'lit'
-import { connect } from 'pwa-helpers'
-import { store } from '../../store.js'
-import { get, translate } from '../../../translate/index.js'
+import {css, html, LitElement} from 'lit'
+import {connect} from 'pwa-helpers'
+import {store} from '../../store.js'
+import {get, translate} from '../../../translate'
 
 class AccountView extends connect(store)(LitElement) {
     static get properties() {
@@ -98,26 +98,16 @@ class AccountView extends connect(store)(LitElement) {
     }
 
     getAvatar() {
-        if (this.switchAvatar === 'light') {
-            if (this.accountInfo.names.length === 0) {
-               return html`<img src="/img/noavatar_light.png" style="width:150px; height:150px; border-radius: 25%;">`
-            } else {
-                const avatarName = this.accountInfo.names[0].name
-                const avatarNode = store.getState().app.nodeConfig.knownNodes[store.getState().app.nodeConfig.node]
-                const avatarUrl = avatarNode.protocol + '://' + avatarNode.domain + ':' + avatarNode.port
-                const url = `${avatarUrl}/arbitrary/THUMBNAIL/${avatarName}/qortal_avatar?async=true&apiKey=${this.getApiKey()}`
-                return html`<img src="${url}" style="width:150px; height:150px; border-radius: 25%;" onerror="this.src='/img/noavatar_light.png';">`
-            }
-        } else if (this.switchAvatar === 'dark') {
-            if (this.accountInfo.names.length === 0) {
-               return html`<img src="/img/noavatar_dark.png" style="width:150px; height:150px; border-radius: 25%;">`
-            } else {
-                const avatarName = this.accountInfo.names[0].name
-                const avatarNode = store.getState().app.nodeConfig.knownNodes[store.getState().app.nodeConfig.node]
-                const avatarUrl = avatarNode.protocol + '://' + avatarNode.domain + ':' + avatarNode.port
-                const url = `${avatarUrl}/arbitrary/THUMBNAIL/${avatarName}/qortal_avatar?async=true&apiKey=${this.getApiKey()}`
-                return html`<img src="${url}" style="width:150px; height:150px; border-radius: 25%;" onerror="this.src='/img/noavatar_dark.png';">`
-            }
+        const noAvatarUrl = `${getComputedStyle(document.body).getPropertyValue('--noavatar')}`
+        const urlArray = noAvatarUrl.split("\"")
+        if (this.accountInfo.names.length === 0) {
+            return html`<img src="${urlArray[1]}" style="width:150px; height:150px; border-radius: 25%;">`
+        } else {
+            const avatarName = this.accountInfo.names[0].name
+            const avatarNode = store.getState().app.nodeConfig.knownNodes[store.getState().app.nodeConfig.node]
+            const avatarUrl = avatarNode.protocol + '://' + avatarNode.domain + ':' + avatarNode.port
+            const url = `${avatarUrl}/arbitrary/THUMBNAIL/${avatarName}/qortal_avatar?async=true&apiKey=${this.getApiKey()}`
+            return html`<img src="${url}" style="width:150px; height:150px; border-radius: 25%;" onerror="this.src='${urlArray[1]}';">`
         }
     }
 
@@ -127,8 +117,7 @@ class AccountView extends connect(store)(LitElement) {
 
     getApiKey() {
         const apiNode = store.getState().app.nodeConfig.knownNodes[store.getState().app.nodeConfig.node]
-        let apiKey = apiNode.apiKey
-        return apiKey
+		return apiNode.apiKey
     }
 
     stateChanged(state) {

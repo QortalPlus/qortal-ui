@@ -15,6 +15,9 @@ const sendDoge = api.sendDoge
 const sendDgb = api.sendDgb
 const sendRvn = api.sendRvn
 const sendArrr = api.sendArrr
+const sendNmc = api.sendNmc
+const sendDash = api.sendDash
+const sendFiro = api.sendFiro
 
 export const routes = {
 	apiCall: async (req) => {
@@ -114,8 +117,7 @@ export const routes = {
 				store.getState().app.selectedAddress.keyPair
 			)
 
-			const res = await processTransaction(signedTxnBytes)
-			response = res
+			response = await processTransaction(signedTxnBytes)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -127,8 +129,7 @@ export const routes = {
 	tradeBotRespondRequest: async (req) => {
 		let response
 		try {
-			const res = await tradeBotRespondRequest(req.data)
-			response = res
+			response = await tradeBotRespondRequest(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -147,9 +148,7 @@ export const routes = {
 				store.getState().app.selectedAddress.keyPair
 			)
 
-			const res = await processTransaction(signedTxnBytes)
-
-			response = res
+			response = await processTransaction(signedTxnBytes)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -161,10 +160,9 @@ export const routes = {
 	cancelAllOffers: async (req) => {
 		let response
 		try {
-			const res = await cancelAllOffers(
+			response = await cancelAllOffers(
 				store.getState().app.selectedAddress
 			)
-			response = res
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -176,8 +174,7 @@ export const routes = {
 	sendBtc: async (req) => {
 		let response
 		try {
-			const res = await sendBtc(req.data)
-			response = res
+			response = await sendBtc(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -189,8 +186,7 @@ export const routes = {
 	sendLtc: async (req) => {
 		let response
 		try {
-			const res = await sendLtc(req.data)
-			response = res
+			response = await sendLtc(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -202,8 +198,7 @@ export const routes = {
 	sendDoge: async (req) => {
 		let response
 		try {
-			const res = await sendDoge(req.data)
-			response = res
+			response = await sendDoge(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -215,8 +210,7 @@ export const routes = {
 	sendDgb: async (req) => {
 		let response
 		try {
-			const res = await sendDgb(req.data)
-			response = res
+			response = await sendDgb(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -228,8 +222,7 @@ export const routes = {
 	sendRvn: async (req) => {
 		let response
 		try {
-			const res = await sendRvn(req.data)
-			response = res
+			response = await sendRvn(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
@@ -241,8 +234,43 @@ export const routes = {
 	sendArrr: async (req) => {
 		let response
 		try {
-			const res = await sendArrr(req.data)
-			response = res
+			response = await sendArrr(req.data)
+		} catch (e) {
+			console.error(e)
+			console.error(e.message)
+			response = e.message
+		}
+		return response
+	},
+
+	sendNmc: async (req) => {
+		let response
+		try {
+			response = await sendNmc(req.data)
+		} catch (e) {
+			console.error(e)
+			console.error(e.message)
+			response = e.message
+		}
+		return response
+	},
+
+	sendDash: async (req) => {
+		let response
+		try {
+			response = await sendDash(req.data)
+		} catch (e) {
+			console.error(e)
+			console.error(e.message)
+			response = e.message
+		}
+		return response
+	},
+
+	sendFiro: async (req) => {
+		let response
+		try {
+			response = await sendFiro(req.data)
 		} catch (e) {
 			console.error(e)
 			console.error(e.message)
