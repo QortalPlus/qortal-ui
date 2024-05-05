@@ -56,7 +56,7 @@ export const newMessageNotificationQapp = (data) => {
             }
 
             notify.onclick = (e) => {
-                const query = `?service=APP&name=Q-Mail`
+                const query = `?service=APP&name=QM-Mail`
 
                 store.dispatch(setNewTab({
                     url: `qdn/browser/index.html${query}`,
@@ -65,7 +65,7 @@ export const newMessageNotificationQapp = (data) => {
                         "url": "qapps",
                         "domain": "core",
                         "page": `qdn/browser/index.html${query}`,
-                        "title": "Q-Mail",
+                        "title": "QM-Mail",
                         "icon": "vaadin:desktop",
                         "menus": [],
                         "parent": false
@@ -83,7 +83,7 @@ export const newMessageNotificationQapp = (data) => {
             const notify = new Notification(data.title, data.options)
 
             notify.onclick = (e) => {
-                const query = `?service=APP&name=Q-Mail`
+                const query = `?service=APP&name=QM-Mail`
 
                 store.dispatch(setNewTab({
                     url: `qdn/browser/index.html${query}`,
@@ -92,7 +92,7 @@ export const newMessageNotificationQapp = (data) => {
                         "url": "qapps",
                         "domain": "core",
                         "page": `qdn/browser/index.html${query}`,
-                        "title": "Q-Mail",
+                        "title": "QM-Mail",
                         "icon": "vaadin:desktop",
                         "menus": [],
                         "parent": false
