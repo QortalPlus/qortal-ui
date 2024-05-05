@@ -2,6 +2,17 @@ export const defaultQappsTabs = [
     {
         "url": "myapp",
         "domain": "core",
+        "page": "qdn/browser/index.html?name=QM-Support&service=APP",
+        "title": "QM-Support",
+        "icon": "vaadin:external-browser",
+        "mwcicon": "live_help",
+        "pluginNumber": "plugin-04tlGdLkkd",
+        "menus": [],
+        "parent": false
+    },
+    {
+        "url": "myapp",
+        "domain": "core",
         "page": "qdn/browser/index.html?name=QM-Tube&service=APP",
         "title": "QM-Tube",
         "icon": "vaadin:external-browser",
