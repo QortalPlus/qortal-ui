@@ -173,7 +173,7 @@ class NotificationBell extends connect(store)(LitElement) {
                     <div class="notifications-list">
                         ${this.notifications.map(notification => html`
                             <div class="notification-item" @click=${() => {
-                                const query = `?service=APP&name=Q-Mail`
+                                const query = `?service=APP&name=QM-Mail`
                                 store.dispatch(setNewTab({
                                     url: `qdn/browser/index.html${query}`,
                                     id: 'q-mail-notification',
@@ -181,7 +181,7 @@ class NotificationBell extends connect(store)(LitElement) {
                                         "url": "myapp",
                                         "domain": "core",
                                         "page": `qdn/browser/index.html${query}`,
-                                        "title": "Q-Mail",
+                                        "title": "QM-Mail",
                                         "icon": "vaadin:mailbox",
 			                "mwcicon": "mail_outline",
                                         "menus": [],
@@ -211,7 +211,7 @@ class NotificationBell extends connect(store)(LitElement) {
         this.showNotifications = !this.showNotifications
     }
     _openTabQmail() {
-        const query = `?service=APP&name=Q-Mail`
+        const query = `?service=APP&name=QM-Mail`
         store.dispatch(setNewTab({
                     url: `qdn/browser/index.html${query}`,
                     id: 'q-mail-notification',
@@ -219,7 +219,7 @@ class NotificationBell extends connect(store)(LitElement) {
                         "url": "myapp",
                         "domain": "core",
                         "page": `qdn/browser/index.html${query}`,
-                        "title": "Q-Mail",
+                        "title": "QM-Mail",
                         "icon": "vaadin:mailbox",
             "mwcicon": "mail_outline",
                         "menus": [],

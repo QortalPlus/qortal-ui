@@ -343,7 +343,7 @@ class TourComponent extends connect(store)(LitElement) {
 
 	visitQtube() {
 		this.onClose();
-		const query = `?service=APP&name=Q-Tube`;
+		const query = `?service=APP&name=QM-Tube`;
 		store.dispatch(
 			setNewTab({
 				url: `qdn/browser/index.html${query}`,
@@ -352,7 +352,7 @@ class TourComponent extends connect(store)(LitElement) {
 					url: 'myapp',
 					domain: 'core',
 					page: `qdn/browser/index.html${query}`,
-					title: 'Q-Tube',
+					title: 'QM-Tube',
 					menus: [],
 					parent: false,
 				},

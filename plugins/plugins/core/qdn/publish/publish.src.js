@@ -255,6 +255,7 @@ class PublishData extends LitElement {
                         <div style="margin:0; margin-top:20px;">
                             <h3 style="margin:0; padding:8px 0; text-transform: capitalize; color: var(--black);">${translate("publishpage.pchange1")} / ${translate("publishpage.pchange2")} ${this.category}</h3>
                             <p style="font-style: italic; font-size: 14px; color: var(--black);" ?hidden="${this.portForwardingEnabled}">${translate("publishpage.pchange3")}</p>
+                            <p style="font-style: italic; font-size: 14px; color: var(--black);">${this.renderUploadSize()}</p>
                         </div>
                     </paper-card>
                     <!-- TODO: adapt this dropdown to list all names on the account. Right now it's hardcoded to a single name -->
@@ -350,6 +351,16 @@ class PublishData extends LitElement {
             this.clearConsole()
         }, 60000)
     }
+
+	renderUploadSize() {
+		if (this.service === 'THUMBNAIL') {
+			return html`(500 KB max.)`
+		} else if (this.service === 'APP') {
+			return html`(50 MB max.)`
+		} else {
+			return html`(500 MB max.)`
+		}
+	}
 
     clearConsole() {
         if (!isElectron()) {
