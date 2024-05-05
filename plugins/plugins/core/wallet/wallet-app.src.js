@@ -2718,6 +2718,7 @@ class MultiWallet extends LitElement {
         this.changeTheme()
         this.changeLanguage()
         this.paymentFee()
+        this.getNodeConfig()
 
         this.bookQortalAddress = window.parent.reduxStore.getState().app.selectedAddress.address
         this.bookBitcoinAddress = window.parent.reduxStore.getState().app.selectedAddress.btcWallet.address
@@ -2802,6 +2803,7 @@ class MultiWallet extends LitElement {
         this.clearConsole()
         setInterval(() => {
             this.clearConsole()
+            this.getNodeConfig()
         }, 60000)
         setInterval(() => {
             this.paymentFee()
@@ -2840,16 +2842,16 @@ class MultiWallet extends LitElement {
     }
 
 	connectedCallback() {
-		super.connectedCallback();
-        this.intervalID = setInterval(this.pingCoinBalancesController, 30000);
+		super.connectedCallback()
+        this.intervalID = setInterval(this.pingCoinBalancesController, 30000)
 
 	}
 
 	disconnectedCallback() {
 
-		super.disconnectedCallback();
+		super.disconnectedCallback()
         if(this.intervalID){
-            clearInterval(this.intervalID);
+            clearInterval(this.intervalID)
 
         }
 	}
@@ -5026,7 +5028,6 @@ class MultiWallet extends LitElement {
 
     async fetchWalletServer(coin) {
         if (coin == 'qort') {
-            this.getNodeConfig()
             return
         }
         let walletServer = ''
@@ -5086,14 +5087,13 @@ class MultiWallet extends LitElement {
     }
 
     getNodeConfig() {
-        this.nodeConfig = {}
         this.nodeDomain = ""
+        const myNode = window.parent.reduxStore.getState().app.nodeConfig.knownNodes[window.parent.reduxStore.getState().app.nodeConfig.node]
+        this.nodeDomain = myNode.domain + ":" + myNode.port
+        this.nodeConfig = {}
         parentEpml.request("getNodeConfig").then((res) => {
             this.nodeConfig = res
-            const myNode = window.parent.reduxStore.getState().app.nodeConfig.knownNodes[window.parent.reduxStore.getState().app.nodeConfig.node]
-            this.nodeDomain = myNode.domain + ":" + myNode.port
         })
-        setTimeout(getNodeConfig, 60000)
     }
 
     async getTransactionGrid(coin) {
